@@ -5,6 +5,7 @@ vite.config.js
 vite.config.d.ts
 
 .env
-cli_traces.json
+.vercel/output/
+
 .env.preview.local
 project.json
