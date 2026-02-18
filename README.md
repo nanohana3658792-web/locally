@@ -1,4 +1,6 @@
-# デプロイ手順（Vercel）
+# locally
+
+## デプロイ手順（Vercel）
 
 ## 前提
 
