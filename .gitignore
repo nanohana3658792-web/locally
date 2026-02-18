@@ -3,4 +3,8 @@ dist/
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+
 .env
+cli_traces.json
+.env.preview.local
+project.json
