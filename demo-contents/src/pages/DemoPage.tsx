@@ -19,9 +19,9 @@ export function DemoPage() {
 
   if (!pattern) {
     return (
-      <main className="container page-main">
-        <h1>パターンが見つかりません</h1>
-        <Link className="btn" to="/">トップへ戻る</Link>
+      <main className="mx-auto w-[min(1200px,92vw)] py-5">
+        <h1 className="text-2xl font-bold text-slate-900">パターンが見つかりません</h1>
+        <Link className="mt-3 inline-block rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white" to="/">トップへ戻る</Link>
       </main>
     )
   }
@@ -69,25 +69,25 @@ export function DemoPage() {
   }
 
   return (
-    <main className="container page-main">
-      <section className="pattern-bar">
+    <main className="mx-auto w-[min(1200px,92vw)] py-5">
+      <section className="mb-3 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-slate-200 bg-white p-4">
         <div>
-          <strong>{pattern.name}</strong>
-          <span>{pattern.useCase} / {pattern.areaScale} / {pattern.idDigits}桁 / {pattern.companyScale} / {pattern.monthlyEstimate}</span>
+          <strong className="block text-base text-slate-900">{pattern.name}</strong>
+          <span className="text-sm text-slate-600">{pattern.useCase} / {pattern.areaScale} / {pattern.idDigits}桁 / {pattern.companyScale} / {pattern.monthlyEstimate}</span>
         </div>
-        <div className="row-gap">
-          <select value={pattern.id} onChange={(e) => navigate(`/demo/${e.target.value}`)}>
+        <div className="flex items-center gap-2">
+          <select className="rounded-lg border border-slate-300 px-2 py-2 text-sm" value={pattern.id} onChange={(e) => navigate(`/demo/${e.target.value}`)}>
             {demoPatterns.map((x) => (
               <option key={x.id} value={x.id}>{x.id}</option>
             ))}
           </select>
-          <Link className="btn" to="/">トップ</Link>
+          <Link className="inline-block rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white" to="/">トップ</Link>
         </div>
       </section>
 
-      <section className="panel-grid">
-        <div className="panel">
-          <h2>簡略マップ</h2>
+      <section className="grid gap-3 md:grid-cols-[1.2fr_0.8fr]">
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <h2 className="text-lg font-semibold text-slate-900">簡略マップ</h2>
           <SimpleMap
             pattern={pattern}
             userLocation={userLocation}
@@ -97,29 +97,29 @@ export function DemoPage() {
           />
         </div>
 
-        <div className="panel phone-panel">
-          <h2>スマートフォン画面</h2>
-          <div className="phone-frame">
+        <div className="min-h-155 rounded-xl border border-slate-200 bg-white p-4">
+          <h2 className="text-lg font-semibold text-slate-900">スマートフォン画面</h2>
+          <div className="mx-auto mt-2 min-h-130 w-full max-w-90 rounded-3xl border-10 border-slate-900 bg-slate-50 p-3.5">
             {selectedProduct ? (
-              <article className="product-card">
-                <button className="btn text-btn" onClick={() => setSelectedProduct(null)}>← 戻る</button>
-                <img src={selectedProduct.imageUrl} alt={selectedProduct.name} />
-                <p>ID: {selectedProduct.productShortId}{selectedProduct.goroawase ? `（${selectedProduct.goroawase}）` : ''}</p>
-                <h3>{selectedProduct.name}</h3>
-                <p>¥{selectedProduct.price.toLocaleString()}</p>
-                <a className="btn" href={selectedProduct.ecUrl} target="_blank" rel="noreferrer">EC購入はこちら</a>
-                <p>在庫: {selectedProduct.stock === 'available' ? 'あり' : selectedProduct.stock === 'few' ? '残りわずか' : 'なし'}</p>
-                <p>月額参考: ¥{selectedProduct.monthlyFee.toLocaleString()}/商品</p>
+              <article>
+                <button className="inline-block rounded-lg bg-slate-200 px-3 py-2 text-sm font-medium text-slate-900" onClick={() => setSelectedProduct(null)}>← 戻る</button>
+                <img className="mt-2 w-full rounded-lg border border-slate-200" src={selectedProduct.imageUrl} alt={selectedProduct.name} />
+                <p className="mt-2 text-sm text-slate-700">ID: {selectedProduct.productShortId}{selectedProduct.goroawase ? `（${selectedProduct.goroawase}）` : ''}</p>
+                <h3 className="mt-1 font-semibold text-slate-900">{selectedProduct.name}</h3>
+                <p className="mt-1 text-sm text-slate-700">¥{selectedProduct.price.toLocaleString()}</p>
+                <a className="mt-2 inline-block rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white" href={selectedProduct.ecUrl} target="_blank" rel="noreferrer">EC購入はこちら</a>
+                <p className="mt-2 text-sm text-slate-700">在庫: {selectedProduct.stock === 'available' ? 'あり' : selectedProduct.stock === 'few' ? '残りわずか' : 'なし'}</p>
+                <p className="mt-1 text-sm text-slate-700">月額参考: ¥{selectedProduct.monthlyFee.toLocaleString()}/商品</p>
               </article>
             ) : candidateStores.length > 1 ? (
               <section>
-                <h3>複数の店舗が見つかりました</h3>
-                <ul className="store-select-list">
+                <h3 className="font-semibold text-slate-900">複数の店舗が見つかりました</h3>
+                <ul className="mt-2 grid gap-2">
                   {candidateStores.map((store) => (
                     <li key={store.id}>
-                      <button onClick={() => chooseStore(store)}>
+                      <button className="grid w-full gap-1 rounded-lg border border-slate-300 bg-white p-2.5 text-left" onClick={() => chooseStore(store)}>
                         <strong>{store.name}</strong>
-                        <span>{store.category} / 約{Math.round(roughDistanceMeters(userLocation, store.position))}m</span>
+                        <span className="text-sm text-slate-600">{store.category} / 約{Math.round(roughDistanceMeters(userLocation, store.position))}m</span>
                       </button>
                     </li>
                   ))}
@@ -127,13 +127,18 @@ export function DemoPage() {
               </section>
             ) : (
               <section>
-                <p>現在位置: {userLocation.lat.toFixed(5)}, {userLocation.lng.toFixed(5)}</p>
-                <label>商品短縮ID（数字のみ）</label>
-                <input inputMode="numeric" value={idInput} onChange={(e) => setIdInput(e.target.value.replace(/\D/g, '').slice(0, 8))} />
-                <button className="btn" onClick={search}>検索する</button>
-                <div className="chips">
+                <p className="text-sm text-slate-700">現在位置: {userLocation.lat.toFixed(5)}, {userLocation.lng.toFixed(5)}</p>
+                <label className="mt-2 block text-sm text-slate-700">商品短縮ID（数字のみ）</label>
+                <input
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                  inputMode="numeric"
+                  value={idInput}
+                  onChange={(e) => setIdInput(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                />
+                <button className="mt-2 inline-block rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white" onClick={search}>検索する</button>
+                <div className="mt-2.5 flex flex-wrap gap-2">
                   {pattern.sampleIds.map((id) => (
-                    <button key={id} className="chip" onClick={() => setIdInput(id)}>{id.length === 1 ? `⭐${id}` : id}</button>
+                    <button key={id} className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-sm text-blue-700" onClick={() => setIdInput(id)}>{id.length === 1 ? `⭐${id}` : id}</button>
                   ))}
                 </div>
               </section>

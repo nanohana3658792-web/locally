@@ -41,9 +41,9 @@ export function SimpleMap({ pattern, userLocation, onChangeUserLocation, highlig
   const scalePx = scaleMeters / (111000 / (100000 * zoom))
 
   return (
-    <div className="map-wrap">
+    <div className="flex flex-col gap-2">
       <svg
-        className="map-svg"
+        className="h-auto w-full touch-none rounded-lg border border-slate-300 bg-slate-50"
         viewBox={`0 0 ${W} ${H}`}
         onClick={(e) => {
           const box = (e.currentTarget as SVGSVGElement).getBoundingClientRect()
@@ -129,15 +129,28 @@ export function SimpleMap({ pattern, userLocation, onChangeUserLocation, highlig
         </g>
       </svg>
 
-      <div className="map-toolbar">
-        <button onClick={() => setZoom((z) => Math.min(pattern.mapConfig.maxZoom, z + 0.2))}>＋</button>
-        <button onClick={() => setZoom((z) => Math.max(pattern.mapConfig.minZoom, z - 0.2))}>−</button>
-        <span>ズーム: {zoom.toFixed(1)}</span>
+      <div className="flex items-center gap-2">
+        <button
+          className="h-8 w-8 cursor-pointer rounded-md border border-slate-300 bg-white"
+          onClick={() => setZoom((z) => Math.min(pattern.mapConfig.maxZoom, z + 0.2))}
+        >
+          ＋
+        </button>
+        <button
+          className="h-8 w-8 cursor-pointer rounded-md border border-slate-300 bg-white"
+          onClick={() => setZoom((z) => Math.max(pattern.mapConfig.minZoom, z - 0.2))}
+        >
+          −
+        </button>
+        <span className="text-sm text-slate-700">ズーム: {zoom.toFixed(1)}</span>
       </div>
 
-      <div className="legend">
+      <div className="flex flex-wrap gap-2.5">
         {pattern.stores.map((store, idx) => (
-          <span key={store.id}><i style={{ background: idx === 0 ? '#ff3b30' : '#007aff' }} />{store.name}</span>
+          <span key={store.id} className="inline-flex items-center gap-1.5 text-sm text-slate-700">
+            <i className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: idx === 0 ? '#ff3b30' : '#007aff' }} />
+            {store.name}
+          </span>
         ))}
       </div>
     </div>
