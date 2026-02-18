@@ -4,7 +4,10 @@
         "Contentful",
         "firebaserc",
         "goroawase",
+        "inputmode",
         "Monota",
-        "TSUTAYA"
+        "TSUTAYA",
+        "Vercel",
+        "Vite"
     ]
 }

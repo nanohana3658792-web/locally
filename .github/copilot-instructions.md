@@ -1,3 +1,552 @@
+# Copilot 指示書 - ローカリー (Locally)
+
+AI コーディングエージェント向けの開発ガイド。**このセクション（★ クイックスタート）を先読み**してから詳細要件を参照してください。
+
+---
+
+## ★ クイックスタート - AI エージェント向け基本情報 (5分で読める)
+
+### 🎯 プロジェクト: ローカリー (O2O Commerce デモ)
+- **特許**: JP-2021-033380 (実店舗 × 商品短縮ID → EC購入誘導)
+- **実装**: React + TypeScript (Vite SPA) - **フロントエンドのみ**
+- **核心**: 30デモパターン × 左右2パネル UI (地図 + スマホ画面)
+
+### 🛠️ 必須の技術スタック
+```
+React 18+ / TypeScript / Vite / TailwindCSS / Canvas or SVG
+```
+
+### 🏗️ 最重要な3つの機能
+1. **トップページ**: ランディングサイト (料金表・デモリンク・特許情報)
+2. **デモ画面 ← 核心**: 左パネル(地図) + 右パネル(スマホ) を連動
+3. **Webスライド**: 17枚プレゼン資料
+
+### 📁 最重要ファイル (優先順位)
+```
+src/data/demoPatterns.ts       ← 30パターンの全データ定義
+src/components/demo/           ← SimpleMap / PolygonRenderer
+src/utils/polygonUtils.ts      ← Ray Casting (多角形判定)
+```
+
+### 💡 開発前に理解すること
+- **多角形内包判定**: Ray Casting で点がエリア内かチェック
+- **重層的重複**: 店舗AのID:29と店舗BのID:29が同じ場所に存在可能
+- **30パターン**: 各パターン = 独立したデモデータセット（店舗+商品+料金）
+- **レスポンシブ**: PC(横2パネル) / タブレット(横2パネル調整) / スマホ(縦積み)
+
+### ⚡ すぐできる実装
+1. `npm create vite@latest -- --template react-ts`
+2. TailwindCSS インストール
+3. `src/types/index.ts` で全型を定義
+4. `src/data/demoPatterns.ts` で30パターン構造化
+5. `src/components/demo/SimpleMap.tsx` でCanvas マップ実装
+6. `src/utils/polygonUtils.ts` で Ray Casting 実装
+
+### 🧪 必須テスト (13項目)
+- [ ] 全30パターン表示可能
+- [ ] マップズーム/パン/クリック
+- [ ] 多角形判定精度
+- [ ] ID検索フロー
+- [ ] 複数店舗マッチ時の選択画面
+- [ ] PC/タブレット/スマホ レスポンシブ
+- [ ] 距離スケール正確性
+- [ ] 語呂合わせ表示判定
+- [ ] Webスライド ページ送り
+- [ ] Chrome/Firefox/Safari/Edge
+
+### 📝  NOT 実装
+- ❌ Google Maps API
+- ❌ バックエンド/サーバー
+- ❌ リアルDB (コードハードコード化)
+
+### 📖 詳細マニュアル
+以下の「要件定義書」セクションで完全仕様を確認してください。特に：
+- **Section 6.2**: 簡略マップ要件
+- **Section 8**: デモパターン30個の詳細
+- **Section 10.1**: TypeScript型定義システム
+
+---
+
+## 🔧 実装パターン & コード例
+
+### 型定義システム (`src/types/index.ts`)
+
+```typescript
+// 基本型: 緯度経度
+export interface LatLng {
+  lat: number;  // -90 ~ 90
+  lng: number;  // -180 ~ 180
+}
+
+// 関鍵: 多角形エリア定義
+export interface PolygonArea {
+  id: string;                // 'storeA-area-29'
+  storeId: string;           // 'storeA'
+  productShortId: string;    // '29' or '4649' (数字のみ!)
+  vertices: LatLng[];        // 時計回り順 [4+ 頂点]
+  color: string;             // '#FF0000'
+  opacity: number;           // 0.2 | 0.35 | 0.5
+  label: string;             // '29 (にく) エリア'
+  areaSizeKm2?: number;      // 0.06 など
+  isPremiumArea?: boolean;
+}
+
+// 店舗情報
+export interface Store {
+  id: string;
+  name: string;              // '渋谷コンビニA'
+  category: string;          // 'コンビニ'
+  position: LatLng;          // 店舗代表位置
+  polygonAreas: PolygonArea[];
+}
+
+// 架空商品
+export interface Product {
+  productShortId: string;    // '29'
+  name: string;              // '限定からあげセット'
+  price: number;             // 2980
+  description: string;
+  imageUrl: string;          // プレースホルダー
+  ecUrl: string;             // ダミーURL
+  stock: 'available' | 'few' | 'none';
+  isPremiumId?: boolean;     // 1桁IDか
+  goroawase?: string;        // 'にく'
+  monthlyFee: number;        // 3000 (¥3,000/月)
+}
+
+// デモパターン本体 (重要!)
+export interface DemoPattern {
+  id: string;               // 'CVS-S-1-SM'
+  name: string;             // 'プレミアム1桁ID・個人経営コンビニ'
+  useCase: string;          // 'コンビニ'
+  areaScale: 'S' | 'M' | 'L';
+  idDigits: number;         // 1~8
+  companyScale: string;     // '中小企業'
+  monthlyEstimate: string;  // '¥50,500'
+  stores: Store[];
+  productLists: {           // 店舗別商品リスト
+    storeId: string;
+    products: Product[];
+  }[];
+  sampleIds: string[];      // ['29', '4649', '3150']
+  hasDuplicateIds: boolean; // 同一ID複数店舗テスト用
+}
+```
+
+### DenoPatterns データファイル (`src/data/demoPatterns.ts`)
+
+```typescript
+import { DemoPattern } from '../types';
+
+export const demoPatterns: DemoPattern[] = [
+  // パターン1: コンビニ - 単店舗 - 1桁プレミアムID
+  {
+    id: 'CVS-S-1-SM',
+    name: 'プレミアム1桁ID・個人経営コンビニ',
+    useCase: 'コンビニ',
+    areaScale: 'S',
+    idDigits: 1,
+    companyScale: '中小企業',
+    monthlyEstimate: '¥50,500',
+    
+    // ← 各パターンは独立したデータセット
+    stores: [
+      {
+        id: 'store-cvs-001',
+        name: '渋谷コンビニA',
+        category: 'コンビニ',
+        position: { lat: 35.6595, lng: 139.7010 },
+        polygonAreas: [
+          {
+            id: 'area-1',
+            storeId: 'store-cvs-001',
+            productShortId: '3',
+            vertices: [
+              { lat: 35.6600, lng: 139.6990 },
+              { lat: 35.6600, lng: 139.7020 },
+              { lat: 35.6580, lng: 139.7020 },
+              { lat: 35.6580, lng: 139.6990 },
+            ],
+            color: '#FF0000',
+            opacity: 0.3,
+            label: '⭐ ID:3 プレミアムエリア',
+            isPremiumArea: true,
+          },
+          // 複数エリア (重層的に重複可能)
+        ],
+      },
+      // 複数店舗 (2~5個)
+    ],
+    
+    productLists: [
+      {
+        storeId: 'store-cvs-001',
+        products: [
+          {
+            productShortId: '3',
+            name: '限定プレミアムおにぎり',
+            price: 5980,
+            description: '将来の限定商品',
+            imageUrl: '/assets/placeholder.png',
+            ecUrl: 'https://example.com/product/3',
+            stock: 'available',
+            isPremiumId: true,
+            monthlyFee: 50000,
+          },
+          // 5~10個商品
+        ],
+      },
+    ],
+    
+    sampleIds: ['3', '29', '4649'],
+    hasDuplicateIds: false,
+  },
+  
+  // パターン2: コンビニ - 全国チェーン - 4桁語呂合わせID
+  {
+    id: 'CVS-L-4-LG',
+    name: '語呂合わせ活用・全国コンビニチェーン',
+    useCase: 'コンビニ',
+    areaScale: 'L',
+    idDigits: 4,
+    companyScale: '大企業',
+    monthlyEstimate: '¥18,000',
+    
+    stores: [ /* 複数店舗データ */ ],
+    productLists: [ /* 複数店舗の商品 */ ],
+    sampleIds: ['29', '4649', '1129', '3150'],
+    hasDuplicateIds: true,  // ← 同一ID複数店舗を含む
+  },
+  
+  // ... パターン3～30
+];
+```
+
+### Ray Casting 実装 (`src/utils/polygonUtils.ts`)
+
+```typescript
+import { LatLng, PolygonArea } from '../types';
+
+/**
+ * Ray Casting アルゴリズムで点がポリゴン内にあるか判定
+ * @param point ユーザー位置
+ * @param polygon 多角形エリア（vertices）
+ * @returns true = 内包 / false = 外部
+ */
+export function isPointInPolygon(
+  point: LatLng,
+  polygon: LatLng[]
+): boolean {
+  if (polygon.length < 3) return false;
+  
+  let isInside = false;
+  let j = polygon.length - 1;
+  
+  for (let i = 0; i < polygon.length; i++) {
+    const xi = polygon[i].lng;
+    const yi = polygon[i].lat;
+    const xj = polygon[j].lng;
+    const yj = polygon[j].lat;
+    
+    const intersect =
+      yi > point.lat !== yj > point.lat &&
+      point.lng < ((xj - xi) * (point.lat - yi)) / (yj - yi) + xi;
+    
+    if (intersect) isInside = !isInside;
+    j = i;
+  }
+  
+  return isInside;
+}
+
+/**
+ * ユーザー位置から該当するすべてのエリアを検出
+ */
+export function findMatchingAreas(
+  userPosition: LatLng,
+  allAreas: PolygonArea[]
+): PolygonArea[] {
+  return allAreas.filter(area =>
+    isPointInPolygon(userPosition, area.vertices)
+  );
+}
+
+/**
+ * 同一IDで複数マッチがある場合の店舗グループ化
+ */
+export function groupByStore(
+  areas: PolygonArea[]
+): Map<string, PolygonArea[]> {
+  const grouped = new Map<string, PolygonArea[]>();
+  
+  for (const area of areas) {
+    if (!grouped.has(area.storeId)) {
+      grouped.set(area.storeId, []);
+    }
+    grouped.get(area.storeId)!.push(area);
+  }
+  
+  return grouped;
+}
+```
+
+### 2パネル同期パターン (`src/hooks/useSimpleMap.ts`)
+
+```typescript
+import { useState, useCallback } from 'react';
+import { LatLng, DemoPattern, PolygonArea } from '../types';
+import { findMatchingAreas, groupByStore } from '../utils/polygonUtils';
+
+export function useSimpleMap(pattern: DemoPattern) {
+  // ユーザー位置状態
+  const [userPosition, setUserPosition] = useState<LatLng | null>(null);
+  
+  // 該当エリア (マップクリック時に更新 → スマホ画面に連動)
+  const [matchingAreas, setMatchingAreas] = useState<PolygonArea[]>([]);
+  
+  // ズームレベル
+  const [zoom, setZoom] = useState(10);
+  
+  // マップクリック処理
+  const handleMapClick = useCallback((pos: LatLng) => {
+    setUserPosition(pos);
+    
+    // すべてのエリアを集約
+    const allAreas = pattern.stores.flatMap(s => s.polygonAreas);
+    
+    // Ray Casting で該当エリアを検出
+    const matched = findMatchingAreas(pos, allAreas);
+    setMatchingAreas(matched);
+  }, [pattern]);
+  
+  // スマホ画面へ渡す処理
+  const getCurrentStores = useCallback(() => {
+    if (!userPosition || matchingAreas.length === 0) {
+      return null;
+    }
+    
+    // 同一店舗のエリアをグループ化 (複数マッチ時に選択画面表示用)
+    const grouped = groupByStore(matchingAreas);
+    
+    return Array.from(grouped.entries()).map(([storeId, areas]) => {
+      const store = pattern.stores.find(s => s.id === storeId);
+      return {
+        store,
+        areas,
+      };
+    });
+  }, [userPosition, matchingAreas, pattern]);
+  
+  return {
+    userPosition,
+    matchingAreas,
+    zoom,
+    handleMapClick,
+    setZoom,
+    getCurrentStores,
+  };
+}
+```
+
+### SmartphoneFrame コンポーネント
+
+```typescript
+import { DemoPattern, LatLng } from '../types';
+
+interface SmartphoneFrameProps {
+  pattern: DemoPattern;
+  userPosition: LatLng | null;
+  matchingStores: { store: Store; areas: PolygonArea[] }[] | null;
+  onIdSearch: (id: string) => void;
+}
+
+export const SmartphoneFrame: React.FC<SmartphoneFrameProps> = ({
+  pattern,
+  userPosition,
+  matchingStores,
+  onIdSearch,
+}) => {
+  const [inputId, setInputId] = useState('');
+  
+  return (
+    <div className="border-8 border-black rounded-2xl w-72 h-96 overflow-hidden shadow-lg">
+      {/* Phone content */}
+      <div className="bg-white h-full flex flex-col">
+        {/* ステータスバー */}
+        <div className="bg-black text-white text-center py-1 text-xs">
+          🏪 {userPosition ? '渋谷区付近' : 'エリア外'}
+        </div>
+        
+        {/* ID入力フォーム */}
+        <div className="p-4 flex-1 space-y-2">
+          <input
+            type="text"
+            inputMode="numeric"  // ← 重要！数字キーボード
+            value={inputId}
+            onChange={(e) => setInputId(e.target.value.replace(/\D/g, ''))}
+            placeholder="商品IDを入力"
+            className="w-full border px-2 py-1 text-lg font-bold"
+          />
+          
+          <button
+            onClick={() => onIdSearch(inputId)}
+            className="w-full bg-blue-500 text-white py-2 rounded"
+          >
+            検索
+          </button>
+        </div>
+        
+        {/* サンプルIDチップ */}
+        <div className="px-4 py-2 flex gap-2 justify-center flex-wrap">
+          {pattern.sampleIds.map(id => (
+            <button
+              key={id}
+              onClick={() => setInputId(id)}
+              className={`px-2 py-1 rounded text-sm font-bold ${
+                id.length === 1
+                  ? 'bg-yellow-300 border-2 border-gold'  // ⭐ プレミアム
+                  : 'bg-gray-200'
+              }`}
+            >
+              {id.length === 1 ? '⭐' : ''}{id}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+```
+
+---
+
+## 🧪 テスト戦略と例
+
+### 多角形判定テスト (`src/utils/__tests__/polygonUtils.test.ts`)
+
+```typescript
+import { isPointInPolygon, findMatchingAreas } from '../polygonUtils';
+import { LatLng } from '../../types';
+
+describe('polygonUtils - Ray Casting', () => {
+  // 正方形ポリゴン (時計回り)
+  const square: LatLng[] = [
+    { lat: 0, lng: 0 },
+    { lat: 0, lng: 1 },
+    { lat: 1, lng: 1 },
+    { lat: 1, lng: 0 },
+  ];
+  
+  it('内部の点を正しく判定', () => {
+    expect(isPointInPolygon({ lat: 0.5, lng: 0.5 }, square)).toBe(true);
+  });
+  
+  it('外部の点を正しく判定', () => {
+    expect(isPointInPolygon({ lat: 2, lng: 2 }, square)).toBe(false);
+  });
+  
+  it('境界の点を正しく処理', () => {
+    expect(isPointInPolygon({ lat: 0, lng: 0 }, square)).toBeDefined();
+  });
+  
+  it('複数マッチングエリアを検出', () => {
+    const areas = [
+      {
+        id: '1',
+        vertices: square,
+        // ...
+      },
+      {
+        id: '2',
+        vertices: [
+          { lat: 0.3, lng: 0.3 },
+          { lat: 0.3, lng: 0.7 },
+          // ...
+        ],
+        // ...
+      },
+    ];
+    
+    const matched = findMatchingAreas({ lat: 0.5, lng: 0.5 }, areas);
+    expect(matched).toHaveLength(2);  // 両方とも内包
+  });
+});
+```
+
+### でコパターンデータ検証
+
+```typescript
+describe('demoPatterns - Data Integrity', () => {
+  it('30パターン全て定義されているか', () => {
+    expect(demoPatterns).toHaveLength(30);
+  });
+  
+  it('各パターンに必須フィールドが存在', () => {
+    demoPatterns.forEach(pattern => {
+      expect(pattern.id).toMatch(/^[A-Z]{3}-[SML]-\d-[A-Z]{2}$/);
+      expect(pattern.stores.length).toBeGreaterThanOrEqual(2);
+      expect(pattern.sampleIds.length).toBeGreaterThanOrEqual(3);
+      expect(pattern.idDigits).toBeGreaterThanOrEqual(1);
+      expect(pattern.idDigits).toBeLessThanOrEqual(8);
+    });
+  });
+  
+  it('すべてのIDは数字のみ', () => {
+    demoPatterns.forEach(pattern => {
+      pattern.sampleIds.forEach(id => {
+        expect(id).toMatch(/^\d+$/);
+        expect(id.length).toBe(pattern.idDigits);
+      });
+    });
+  });
+  
+  it('多角形エリアの頂点が3以上', () => {
+    demoPatterns.forEach(pattern => {
+      pattern.stores.forEach(store => {
+        store.polygonAreas.forEach(area => {
+          expect(area.vertices.length).toBeGreaterThanOrEqual(3);
+        });
+      });
+    });
+  });
+});
+```
+
+---
+
+## 🎯 実装チェックリスト (Phase別)
+
+### Phase 1: セットアップ (1週間)
+- [ ] Vite + React + TypeScript 初期化
+- [ ] TailwindCSS インストール
+- [ ] `src/types/index.ts` 完全定義
+- [ ] `src/data/demoPatterns.ts` に30パターン データ入力
+- [ ] ルーティング設定 (トップ / デモ/:patternId / スライド)
+
+### Phase 2: トップページ (1週間)
+- [ ] Hero セクション
+- [ ] 料金表表示
+- [ ] デモパターン一覧 + リンク
+- [ ] 特許情報セクション
+
+### Phase 3: デモ画面 ← 最難関 (2週間)
+- [ ] `SimpleMap.tsx` Canvas 描画
+- [ ] `PolygonRenderer.tsx` で多角形描画
+- [ ] `polygonUtils.ts` Ray Casting ロジック
+- [ ] ズーム/パン/スケール表示
+- [ ] `SmartphoneFrame.tsx` UI
+- [ ] 2パネル同期ロジック
+- [ ] ID検索機能
+- [ ] 複数店舗マッチ選択画面
+
+### Phase 4: 仕上げ (1週間)
+- [ ] Webスライド 17枚
+- [ ] レスポンシブ調整 (3段階)
+- [ ] 全テスト実行 (13項目)
+- [ ] Vercel デプロイ
+
+---
+
 # 要件定義書
 
 ## ローカリー（仮名）デモンストレーション
@@ -1288,3 +1837,19 @@ location-code/
 - **Vercel**: [公式ドキュメント](https://vercel.com/docs)
 - **Vite**: [公式ドキュメント](https://vitejs.dev/)
 - **React**: [公式ドキュメント](https://react.dev/)
+
+---
+
+## AI開発者への指示
+
+このドキュメントは AI コーディングエージェント向けの統合要件定義です。以下のポイントに従い開発してください：
+
+1. **要件の完全理解**: 上記の16セクションすべてを熟読し、プロジェクト全体像を把握してください
+2. **特許の重要性**: 特許第6837635号が本プロジェクトの中核です。常に特許範囲を意識してください
+3. **デモデータの充実**: 30パターンすべてにリアルな架空商品・店舗・エリアデータを用意してください
+4. **UI/UX**: 左右2パネルの連動、簡略マップ、スマートフォンシミュレーションが重要です。使いやすさを優先してください
+5. **TypeScript型安全性**: 型定義セクション（10.1）を厳密に実装してください
+6. **テスト網羅性**: 13.1のテストケースをすべてカバーしてください
+7. **Vercelデプロイ**: 12.2のデプロイフローに従ってください
+
+**質問や不明な点がある場合は、このドキュメントを参照してください。**
