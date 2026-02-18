@@ -1,0 +1,7 @@
+{
+  "installCommand": "cd demo-contents && npm install",
+  "buildCommand": "cd demo-contents && npm run build",
+  "outputDirectory": "demo-contents/dist",
+  "framework": "vite",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
