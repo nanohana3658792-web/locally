@@ -1,5 +1,12 @@
 # locally
 
+## 要件ドキュメント
+
+- デモ構築要件: `docs/requirements-demo.md`
+- 実サービス提供要件: `docs/requirements-service.md`
+
+実装の優先度は実サービス提供要件を基準とします。既存のデモデプロイ手順は下記を参照してください。
+
 ## デプロイ手順（Vercel）
 
 ## 前提
