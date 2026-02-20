@@ -6,6 +6,5 @@ vite.config.d.ts
 
 .env
 .vercel/output/
-
-.env.preview.local
-project.json
+.vercel/.env.preview.local
+.vercel/project.json
